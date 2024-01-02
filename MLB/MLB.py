@@ -20,13 +20,19 @@ st.markdown("This is a dahsboard to map out the homes games within the *2024 MLB
 # #if not Get the Data
 #modify data as needed
 
-mlb_data="./MLB Games.xlsx"
+mlb_data="./data/MLB Games.csv"
 #DATA_URL="https://github.com/Emery-Dittmer/Streamlit-Apps/blob/main/MLB/MLB%20Games.xlsx"
 #mlb_data = requests.get(DATA_URL)
 #st.write(mlb_data.content)
 
-games=pd.read_excel(mlb_data,sheet_name="Games")
-games=games.drop(columns=['Unnamed: 0'])
+
+
+games=pd.read_csv(mlb_data)
+
+try:
+    games=games.drop(columns=['Unnamed: 0'])
+except:
+    games=games
 games['Full Date']=games['Date']
 games['Date'] = pd.to_datetime(games['Date'], format='%A, %B %d, %Y')
 cols = games.columns.tolist()
