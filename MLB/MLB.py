@@ -20,7 +20,7 @@ st.markdown("This is a dahsboard to map out the homes games within the *2024 MLB
 # #if not Get the Data
 #modify data as needed
 
-mlb_data="MLB Games.xlsx"
+mlb_data="./MLB Games.xlsx"
 #DATA_URL="https://github.com/Emery-Dittmer/Streamlit-Apps/blob/main/MLB/MLB%20Games.xlsx"
 #mlb_data = requests.get(DATA_URL)
 #st.write(mlb_data.content)
