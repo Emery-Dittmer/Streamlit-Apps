@@ -1,6 +1,6 @@
 streamlit==0.80.0
 pandas
-numpy==1.18.5
+numpy
 plotly
 plotly-express
-xlrd==1.2.0
+xlrd
