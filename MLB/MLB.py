@@ -25,14 +25,17 @@ mlb_data="./data/MLB Games.csv"
 #mlb_data = requests.get(DATA_URL)
 #st.write(mlb_data.content)
 
+def reset_data():
+    df=pd.read_csv(mlb_data)
+    return df
 
-
-games=pd.read_csv(mlb_data)
+games=reset_data()
 
 try:
     games=games.drop(columns=['Unnamed: 0'])
 except:
     games=games
+    
 games['Full Date']=games['Date']
 games['Date'] = pd.to_datetime(games['Date'], format='%A, %B %d, %Y')
 cols = games.columns.tolist()
@@ -64,8 +67,12 @@ def datafilter(df):
     return df
 
 
+
 #%%
 #Session State
+if 'ult_min_date' not in st.session_state:
+    st.session_state.ult_min_date = games['Date'].min()
+
 
 if 'min_date' not in st.session_state:
     st.session_state.min_date = games['Date'].min()
@@ -89,7 +96,7 @@ with st.sidebar:
     d = st.date_input(
         "Time Period for Games",
         (min_date, min_date + datetime.timedelta(days=delta)),
-        min_date,
+        st.session_state.ult_min_date,
         min_date + datetime.timedelta(days=365),
         format="DD.MM.YYYY",
     )
@@ -106,7 +113,7 @@ with st.sidebar:
     
     # Increment the date forward by 1 week when the button is clicked
     st.button('Next Week', on_click=increment_week)
-
+    st.button('Reset',on_click=reset_data,type='primary')
 games=datafilter(games)
 cumulative_counts_df=datafilter(cumulative_counts_df)
 
