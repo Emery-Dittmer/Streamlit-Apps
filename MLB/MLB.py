@@ -21,15 +21,11 @@ st.markdown("This is a dahsboard to map out the homes games within the *2024 MLB
 #modify data as needed
 
 mlb_data="./data/MLB Games.csv"
+games=pd.read_csv(mlb_data)
+
 #DATA_URL="https://github.com/Emery-Dittmer/Streamlit-Apps/blob/main/MLB/MLB%20Games.xlsx"
 #mlb_data = requests.get(DATA_URL)
 #st.write(mlb_data.content)
-
-def reset_data():
-    df=pd.read_csv(mlb_data)
-    return df
-
-games=reset_data()
 
 try:
     games=games.drop(columns=['Unnamed: 0'])
@@ -54,6 +50,9 @@ for team in games['Home Team'].unique():
 
 team = games['Home Team'].drop_duplicates()
 
+#%%
+#functions
+
 def datafilter(df):
     #Home Team
     df = df[df['Home Team'].str.contains('|'.join(team))]
@@ -64,40 +63,44 @@ def datafilter(df):
     #US State
     df=df[df['State'].str.contains('|'.join(us_state))]
     
+    #reset delta
+    delta=start_date-end_date
+    min_date=start_date
     return df
 
-
+def increment_week():
+    st.session_state.min_date= pd.to_datetime(d[0])
+    st.session_state.min_date+= datetime.timedelta(days=7)
 
 #%%
 #Session State
 if 'ult_min_date' not in st.session_state:
     st.session_state.ult_min_date = games['Date'].min()
 
-
 if 'min_date' not in st.session_state:
     st.session_state.min_date = games['Date'].min()
+    min_date=st.session_state.min_date
     
 if 'delta' not in st.session_state:
     st.session_state.delta = 7
     
-def increment_week():
-    st.session_state.min_date+= datetime.timedelta(days=7)
-    min_date=st.session_state.min_date
+
+
 
 #%%
 #Get the Sidebar with calendar
 with st.sidebar:
 
-    min_date=st.session_state.min_date
-
+    
     delta=st.number_input('Number of Days',1,7)
     st.session_state.delta=delta
     
     d = st.date_input(
         "Time Period for Games",
-        (min_date, min_date + datetime.timedelta(days=delta)),
+        (st.session_state.min_date,
+        st.session_state.min_date + datetime.timedelta(days=delta-1)),
         st.session_state.ult_min_date,
-        min_date + datetime.timedelta(days=365),
+        st.session_state.min_date + datetime.timedelta(days=365),
         format="DD.MM.YYYY",
     )
 
@@ -113,7 +116,8 @@ with st.sidebar:
     
     # Increment the date forward by 1 week when the button is clicked
     st.button('Next Week', on_click=increment_week)
-    st.button('Reset',on_click=reset_data,type='primary')
+    #games=st.button('Reset',on_click=reset_data,type='primary')
+    
 games=datafilter(games)
 cumulative_counts_df=datafilter(cumulative_counts_df)
 
