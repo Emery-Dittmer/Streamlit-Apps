@@ -31,8 +31,7 @@ try:
     bytesio = BytesIO(file.content)
     games = pd.read_csv(bytesio)
 except:
-    mlb_data = './data/MLB Games.csv'
-    games=pd.read_csv(mlb_data)
+    st.text("DATA ERROR")
     
 
 #DATA_URL="https://github.com/Emery-Dittmer/Streamlit-Apps/blob/main/MLB/MLB%20Games.xlsx"
