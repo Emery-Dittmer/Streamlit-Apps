@@ -3,7 +3,8 @@ import datetime
 import pandas as pd
 import plotly.express as px
 import ast
-from pathlib import Path
+import requests
+from io import BytesIO
 
 
 #%%
@@ -16,13 +17,19 @@ st.markdown("This is a dahsboard to map out the homes games within the *2024 MLB
 
 
 
+
+
+
 #%%
 #Check if data is avaialble 
 # #if not Get the Data
 #modify data as needed
 try:
-    mlb_data = Path(__file__).parents[1] / 'data/MLB Games.csv'
-    games=pd.read_csv(mlb_data)
+    CSV = '1aPOm3oFMmz0nUgGhBVGEwucAKIdokC-p'
+    csv_url = f'https://drive.google.com/uc?export=download&id={CSV}'
+    file = requests.get(csv_url)
+    bytesio = BytesIO(file.content)
+    games = pd.read_csv(bytesio)
 except:
     mlb_data = './data/MLB Games.csv'
     games=pd.read_csv(mlb_data)
