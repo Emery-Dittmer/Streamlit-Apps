@@ -3,6 +3,7 @@ import datetime
 import pandas as pd
 import plotly.express as px
 import ast
+from pathlib import Path
 
 
 #%%
@@ -19,9 +20,13 @@ st.markdown("This is a dahsboard to map out the homes games within the *2024 MLB
 #Check if data is avaialble 
 # #if not Get the Data
 #modify data as needed
-
-mlb_data="./data/MLB Games.csv"
-games=pd.read_csv(mlb_data)
+try:
+    mlb_data = Path(__file__).parents[1] / 'data/MLB Games.csv'
+    games=pd.read_csv(mlb_data)
+except:
+    mlb_data = './data/MLB Games.csv'
+    games=pd.read_csv(mlb_data)
+    
 
 #DATA_URL="https://github.com/Emery-Dittmer/Streamlit-Apps/blob/main/MLB/MLB%20Games.xlsx"
 #mlb_data = requests.get(DATA_URL)
