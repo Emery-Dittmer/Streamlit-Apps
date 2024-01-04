@@ -110,7 +110,7 @@ with st.sidebar:
         format="DD.MM.YYYY"
     )
     
-    delta=st.slider('Number of Days',1,150)
+    delta=st.slider('Number of Days',1,250)
     st.session_state.delta=delta
     
     d2=(st.session_state.min_date + datetime.timedelta(days=delta-1))
