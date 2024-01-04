@@ -43,7 +43,7 @@ try:
 except:
     games=games
     
-st.dataframe(games)
+#st.dataframe(games)
     
 games['Full Date']=games['Date']
 games['Date'] = pd.to_datetime(games['Date'], format='%A, %B %d, %Y')
