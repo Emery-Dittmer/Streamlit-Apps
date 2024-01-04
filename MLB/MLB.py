@@ -82,7 +82,7 @@ def datafilter(df):
     return df
 
 def increment_week():
-    st.session_state.min_date= pd.to_datetime(d[0])
+    st.session_state.min_date= pd.to_datetime(d1)
     st.session_state.min_date+= datetime.timedelta(days=7)
 
 #%%
