@@ -10,7 +10,7 @@ from io import BytesIO
 #%%
 ##Formatting
 #format Page
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide",initial_sidebar_state="expanded")
 #Formatting for Markdown
 st.title("MLB Games This Season")
 st.markdown("This is a dahsboard to map out the homes games within the *2024 MLB baseball season.* You can sort by team, state and date to find the ideal game based on geography.")
@@ -43,6 +43,8 @@ try:
 except:
     games=games
     
+st.dataframe(games)
+    
 games['Full Date']=games['Date']
 games['Date'] = pd.to_datetime(games['Date'], format='%A, %B %d, %Y')
 cols = games.columns.tolist()
@@ -68,8 +70,8 @@ def datafilter(df):
     #Home Team
     df = df[df['Home Team'].str.contains('|'.join(team))]
     #Dates
-    start_date = pd.to_datetime(d[0])
-    end_date = pd.to_datetime(d[1])
+    start_date = pd.to_datetime(d1)
+    end_date = pd.to_datetime(d2)
     df=df[df['Date'].between(start_date, end_date)]
     #US State
     df=df[df['State'].str.contains('|'.join(us_state))]
@@ -101,20 +103,23 @@ if 'delta' not in st.session_state:
 #%%
 #Get the Sidebar with calendar
 with st.sidebar:
-
     
-    delta=st.number_input('Number of Days',1,7)
+    d1 = st.date_input(
+        "Start Date",
+        st.session_state.min_date,
+        format="DD.MM.YYYY"
+    )
+    
+    delta=st.slider('Number of Days',1,150)
     st.session_state.delta=delta
     
-    d = st.date_input(
-        "Time Period for Games",
-        (st.session_state.min_date,
-        st.session_state.min_date + datetime.timedelta(days=delta-1)),
-        st.session_state.ult_min_date,
-        st.session_state.min_date + datetime.timedelta(days=365),
-        format="DD.MM.YYYY",
-    )
-
+    d2=(st.session_state.min_date + datetime.timedelta(days=delta-1))
+    
+    st.markdown("Time Period <br> " +
+                "**"+ d1.strftime("%A, %B %d, %Y") + "**"+
+                '  <br> to <br> ' + 
+                "**"+ d2.strftime("%A, %B %d, %Y") + "**",
+                unsafe_allow_html=True)
     team = st.multiselect(
         'Select Team',
         (games['Home Team'].drop_duplicates().sort_values())
@@ -148,13 +153,45 @@ map_games = px.scatter_mapbox(games,
                         mapbox_style = 'carto-darkmatter')
 st.plotly_chart(map_games, use_container_width=True)
 
-tab1, tab2 = st.tabs(["Distribution of Games", "Cumulative Games"])
+tab1, tab2, tab3 = st.tabs(["Heatmap of Games","Distribution of Games", "Cumulative Games"])
 with tab1:
+   # Create a new DataFrame for heatmap
+    heatmap_df = pd.DataFrame(columns=['Team', 'Opponent', 'Count'])
+
+    # Iterate through each row and count occurrences of home and away teams
+    for _, row in games.iterrows():
+        # Home team
+        heatmap_df = pd.concat([heatmap_df, pd.DataFrame({'Team': [row['Home Team']], 'Opponent': [row['Away Team']], 'Count': [1]})], ignore_index=True)
+        # Away team
+        heatmap_df = pd.concat([heatmap_df, pd.DataFrame({'Team': [row['Away Team']], 'Opponent': [row['Home Team']], 'Count': [1]})], ignore_index=True)
+
+    # Group by team and opponent and sum the counts
+    heatmap_df = heatmap_df.groupby(['Team', 'Opponent']).sum().reset_index()
+
+    # Create a pivot table for the heatmap
+    heatmap_pivot = heatmap_df.pivot(index='Team', columns='Opponent', values='Count').fillna(0)
+
+    # Create heatmap using Plotly
+    fig = px.imshow(heatmap_pivot.values,
+                    labels=dict(color='Count'),
+                    x=heatmap_pivot.columns,
+                    y=heatmap_pivot.index,
+                    color_continuous_scale='Viridis')
+
+    # Customize the layout if needed
+    fig.update_layout(
+        title='Home vs Away Teams Heatmap',
+        xaxis_title='Opponent',
+        yaxis_title='Team'
+    )
+   
+    st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+with tab2:
     # Use the Streamlit theme.
     # This is the default. So you can also omit the theme argument.
     fig=px.pie(games,names='Home Team')
     st.plotly_chart(fig, theme="streamlit", use_container_width=True)
-with tab2:
+with tab3:
     # Use the native Plotly theme.
     fig=px.line(cumulative_counts_df,x='Date',y='Cumulative Games',color='Home Team')
     st.plotly_chart(fig, theme="streamlit", use_container_width=True)
