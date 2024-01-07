@@ -113,6 +113,8 @@ with st.sidebar:
     delta=st.slider('Number of Days',1,250)
     st.session_state.delta=delta
     
+    st.session_state.min_date=d1
+    
     d2=(st.session_state.min_date + datetime.timedelta(days=delta-1))
     
     st.markdown("Time Period <br> " +
@@ -200,3 +202,4 @@ with tab3:
 
 
 #st.write(d)
+# %%
