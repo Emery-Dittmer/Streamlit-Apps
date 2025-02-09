@@ -186,15 +186,54 @@ def main():
             st.subheader("Routes between Airport")
             st.plotly_chart(fig)
 
+            # Single Airport Flight Routes
+            st.sidebar.header("Select a Single Airport for Routes")
+            selected_airport = st.sidebar.selectbox("Select Airport", lounges["IATA Code"].unique())
+
+            if selected_airport:
+                # Filter routes for the selected airport
+                selected_routes = routes[
+                    (routes["Source airport"] == selected_airport) | (routes["Destination airport"] == selected_airport)
+                ]
+
+                # Generate the map with airline routes
+                st.subheader(f"Routes for {selected_airport}")
+
+                airline_colors = selected_routes["Airline"].unique()  # Assuming there's a column for Airline
+
+                fig_airline = px.scatter_mapbox(
+                    selected_routes,
+                    lat="Source Latitude",
+                    lon="Source Longitude",
+                    color="Airline",
+                    hover_name="Source airport",
+                    zoom=3,
+                    height=500,
+                    mapbox_style="carto-darkmatter"
+                )
+
+                # Add return flight routes
+                for _, row in selected_routes.iterrows():
+                    fig_airline.add_scattermapbox(
+                        lon=[row["Source Longitude"], row["Destination Longitude"]],
+                        lat=[row["Source Latitude"], row["Destination Latitude"]],
+                        mode="lines",
+                        line=dict(width=2, color="blue"),
+                        name=f"{row['Airline']} route"
+                    )
+
+                st.plotly_chart(fig_airline)
+
         else:
             st.warning("No lounge data available. Please check the CSV URL.")
 
     except Exception as e:
         st.markdown(
-         f"<h3 style='color: red; text-align: center;'>🚨 An error occurred. Please enter an airport or  🚨</h3>", 
+         f"<h3 style='color: red; text-align: center;'>🚨 An error occurred: {str(e)} 🚨</h3>", 
         unsafe_allow_html=True
         )
 
 # Run the app
 if __name__ == "__main__":
     main()
+
