@@ -1,22 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import requests
-from io import BytesIO
 from itertools import permutations
 
 # Function to load data from Google Sheets CSV
 @st.cache_data
 def load_data(csv_url):
     try:
-        # Read CSV with flexible options
-        data = pd.read_csv(
-            csv_url,
-            error_bad_lines=False,  # Ignore malformed rows
-            warn_bad_lines=True,  # Show warnings for problematic rows
-            encoding="utf-8",  # Handle special characters
-            sep=","  # Ensure correct delimiter (change to `sep=";"` if needed)
-        )
+        data = pd.read_csv(csv_url, encoding="utf-8", sep=",")
         return data
     except Exception as e:
         st.error(f"Failed to load data: {e}")
@@ -28,178 +19,152 @@ def main():
         st.title("Lounge and Airline Routes Dashboard")
         st.markdown("This app visualizes lounges and airline routes.")
 
-        # URL to the Google Sheets CSV
-        csv_url = st.text_input(
-            "Enter the Google Sheets CSV URL", 
-            "https://drive.google.com/file/d/1dmumzrtLm-rkeUfbkjOhNiY7UJ1OC_rV/view?usp=sharing"
-        )
+        # Load Lounges Data
+        csv_url = st.text_input("Enter the Google Sheets CSV URL for Lounges", 
+                                "https://drive.google.com/file/d/1dmumzrtLm-rkeUfbkjOhNiY7UJ1OC_rV/view?usp=sharing")
         csv_url = 'https://drive.google.com/uc?id=' + csv_url.split('/')[-2]
-        # Load lounges and routes data
         lounges = load_data(csv_url)
 
-        # Routes CSV
-        routes_csv = st.text_input(
-            "Enter the Google Sheets CSV URL", 
-            "https://drive.google.com/file/d/1LVaUcPnBjYzq5kLMv5Bn4Bw__Hs1x-xw/view?usp=sharing"
-        )
+        # Load Routes Data
+        routes_csv = st.text_input("Enter the Google Sheets CSV URL for Routes", 
+                                   "https://drive.google.com/file/d/1LVaUcPnBjYzq5kLMv5Bn4Bw__Hs1x-xw/view?usp=sharing")
         routes_csv = 'https://drive.google.com/uc?id=' + routes_csv.split('/')[-2]
-        routes = pd.read_csv(routes_csv)
+        routes = load_data(routes_csv)
 
-        # Validate lounges data
         if not lounges.empty:
-            # Sidebar for filters
-            st.sidebar.header("Filters")
+            lounges["IATA_Airport"] = lounges["IATA Code"] + " - " + lounges["Airport Name"]
 
-            iata_codes = lounges["IATA Code"].dropna().unique()
+            # Sidebar Filters
+            st.sidebar.header("Filters")
+            iata_airport_combined = lounges["IATA_Airport"].dropna().unique()
             lounge_names = lounges["Lounge Name"].dropna().unique()
 
-            # Multiselect for IATA Codes
-            selected_iata = st.sidebar.multiselect(
-                "Select IATA Code(s)", options=list(iata_codes), default=[]
-            )
-
-            # Single select for Lounge Names
-            selected_lounge_name = st.sidebar.selectbox(
-                "Select Lounge Name", options=["All"] + list(lounge_names)
-            )
+            selected_iata_airport = st.sidebar.multiselect("Select Airport(s)", options=list(iata_airport_combined), default=[])
+            selected_lounge_name = st.sidebar.selectbox("Select Lounge Name", options=["All"] + list(lounge_names))
 
             # Apply filters
             filtered_data = lounges.copy()
-
-            if selected_iata:  # Apply IATA Code filter if any are selected
-                filtered_data = filtered_data[filtered_data["IATA Code"].isin(selected_iata)]
-                lounge_counts = (
-                    filtered_data.groupby(["IATA Code", "Lounge Name"])
-                    .size()
-                    .reset_index(name="Count")  # Rename the count column
-                    .sort_values(["IATA Code", "Count"], ascending=[True, False])  # Sort by IATA Code and Count (Descending)
-                )
+            if selected_iata_airport:
+                filtered_data = filtered_data[filtered_data["IATA_Airport"].isin(selected_iata_airport)]
             if selected_lounge_name != "All":
-                filtered_data = filtered_data[filtered_data["Name"] == selected_lounge_name]
+                filtered_data = filtered_data[filtered_data["Lounge Name"] == selected_lounge_name]
 
-            # Group by IATA Code and Lounge Name, then count occurrences
+            # Grouping for tables
             lounge_counts = (
-                filtered_data.groupby(["IATA Code", "Lounge Name"])
+                filtered_data.groupby(["IATA_Airport", "Lounge Name"])
                 .size()
-                .reset_index(name="Count")  # Rename the count column
+                .reset_index(name="Count")
             )
 
-            # Pivot the table so that IATA Codes become columns and Lounge Names remain as rows
-            lounge_pivot = lounge_counts.pivot_table(
-                index="Lounge Name", 
-                columns="IATA Code", 
-                values="Count", 
-                fill_value=0  # Replace NaNs with 0 for better readability
-            )
+            # Pivot for display
+            lounge_pivot = lounge_counts.pivot_table(index="Lounge Name", columns="IATA_Airport", values="Count", fill_value=0)
 
-            # Display the filtered data
             st.subheader("Lounge Count by Airport")
-            # Apply color gradient using Pandas Styler and Streamlit
-            styled_pivot_airport = lounge_pivot.style.set_properties(**{
-                "white-space": "nowrap",
-                "max-width": "200px"
-            }).background_gradient(cmap="Blues")
+            styled_pivot = lounge_pivot.style.background_gradient(cmap="Blues")
+            st.dataframe(styled_pivot)
 
-            # Show styled dataframe in Streamlit
-            st.dataframe(styled_pivot_airport)
-
-            # New: Airport Count by Lounge (Inverted Table)
+            # Airport Count by Lounge
+            airport_pivot = lounge_counts.pivot_table(index="IATA_Airport", columns="Lounge Name", values="Count", fill_value=0)
             st.subheader("Airport Count by Lounge")
+            styled_airport_pivot = airport_pivot.style.background_gradient(cmap="Greens")
+            st.dataframe(styled_airport_pivot)
+            
+            
+              # 🎯 **Two Maps for Lounges**
+            st.subheader("Map of All Selected Lounges vs. All Lounges")
 
-            # Pivot table where airports are rows and lounges are columns
-            airport_pivot = lounge_counts.pivot_table(
-                index="IATA Code",
-                columns="Lounge Name",
-                values="Count",
-                fill_value=0
-            )
-
-            # Add a column to count the total lounges at each airport
-            airport_pivot["Lounge Count"] = airport_pivot.sum(axis=1)
-
-            # Style the new DataFrame
-            styled_pivot_lounge = airport_pivot.style.set_properties(**{
-                "white-space": "nowrap",
-                "max-width": "200px"
-            }).background_gradient(cmap="Greens")
-
-            # Display the new DataFrame
-            st.dataframe(styled_pivot_lounge)
-
-            # Map visualization
-            st.subheader("Map of All Lounges")
+            st.markdown("### Filtered Lounges")
             if "Latitude" in filtered_data.columns and "Longitude" in filtered_data.columns:
-                fig = px.scatter_mapbox(
+                fig_filtered = px.scatter_mapbox(
                     filtered_data,
                     lat="Latitude",
                     lon="Longitude",
-                    color="Lounge Name",
-                    hover_name="Name",
+                    color="IATA_Airport",
+                    hover_name="Lounge Name",
                     zoom=3,
                     height=500,
                     mapbox_style="carto-darkmatter"
                 )
-            if fig:
-                st.plotly_chart(fig)
+                st.plotly_chart(fig_filtered)
+            else:
+                st.error("Latitude and Longitude columns are required for plotting the map.")
 
-            # Group by Source and Destination Airports, keeping first occurrence for unique routes
-            routes_grouped = routes.groupby(
-                ["Source airport", "Destination airport"]
-            ).agg({
-                "Source airport ID": "first",
-                "Destination airport ID": "first",
+            st.markdown("All filtered Lounges")
+            if "Latitude" in lounges.columns and "Longitude" in lounges.columns:
+                fig_lounge_filtered = px.scatter_mapbox(
+                    filtered_data,
+                    lat="Latitude",
+                    lon="Longitude",
+                    color="Lounge Name",
+                    hover_name="Lounge Name",
+                    zoom=3,
+                    height=500,
+                    mapbox_style="carto-darkmatter"
+                )
+                st.plotly_chart(fig_lounge_filtered)
+            else:
+                st.error("Latitude and Longitude columns are required for plotting the map.")
+
+
+            # Restore previous route visualization between selected airports
+            st.subheader("Routes Between Selected Airports")
+    
+
+            routes_grouped = routes.groupby(["Source airport", "Destination airport"]).agg({
                 "Source Latitude": "first",
                 "Source Longitude": "first",
                 "Destination Latitude": "first",
                 "Destination Longitude": "first"
             }).reset_index()
-
-            if selected_iata and len(selected_iata) > 1:
-                # Generate all possible airport pairs (A → B and B → A)
-                possible_routes = set(permutations(selected_iata, 2))
-
-                # Filter routes where (Source → Destination) or (Destination → Source) matches the possible pairs
-                filtered_grouped_routes = routes_grouped[
+            
+            #get the IATA codes since the airport names do not exist in the routes data
+            selected_iata_codes=filtered_data['IATA Code'].unique().tolist()
+            
+            if selected_iata_codes and len(selected_iata_codes) > 1:
+                possible_routes = set(permutations(selected_iata_codes, 2))
+                filtered_routes = routes_grouped[
                     routes_grouped.apply(lambda row: (row["Source airport"], row["Destination airport"]) in possible_routes or
-                                            (row["Destination airport"], row["Source airport"]) in possible_routes, axis=1)
+                                                 (row["Destination airport"], row["Source airport"]) in possible_routes, axis=1)
                 ]
             else:
-                filtered_grouped_routes = routes_grouped[
-                (routes_grouped["Source airport"].isin(selected_iata)) | (routes_grouped["Destination airport"].isin(selected_iata))
+                filtered_routes = routes_grouped[
+                    (routes_grouped["Source airport"].isin(selected_iata_codes)) |
+                    (routes_grouped["Destination airport"].isin(selected_iata_codes))
                 ]
-
-            st.write(filtered_grouped_routes)
-
-            # Add routes to the map
-            if not filtered_grouped_routes.empty and fig:
-                for _, row in filtered_grouped_routes.iterrows():
-                    fig.add_scattermapbox(
+            
+            # Plot Routes
+            if not filtered_routes.empty:
+                for _, row in filtered_routes.iterrows():
+                    fig_filtered.add_scattermapbox(
                         lon=[row["Source Longitude"], row["Destination Longitude"]],
                         lat=[row["Source Latitude"], row["Destination Latitude"]],
                         mode="lines",
                         line=dict(width=2, color="blue"),
                         name=f"{row['Source airport']} to {row['Destination airport']}"
                     )
-
-            else:
-                st.error("Latitude and Longitude columns are required for plotting the map.")
-            st.subheader("Routes between Airport")
-            st.plotly_chart(fig)
+                st.plotly_chart(fig_filtered)
 
             # Single Airport Flight Routes
             st.sidebar.header("Select a Single Airport for Routes")
-            selected_airport = st.sidebar.selectbox("Select Airport", lounges["IATA Code"].unique())
-
-            if selected_airport:
-                # Filter routes for the selected airport
+            selected_airport = st.sidebar.selectbox(
+            "Select Airport", 
+            ["Select an airport"] + list(lounges["IATA_Airport"].unique())
+            )
+            
+            
+            if selected_airport=="Select an airport":
+                st.write("Please selecte an aiport on the filters to the left")
+            
+            elif selected_airport:
+                #get the IATA codes since the airport names do not exist in the routes data
+                
+                selected_airport = lounges[lounges["IATA_Airport"] == selected_airport]["IATA Code"].iloc[0]
+            
                 selected_routes = routes[
                     (routes["Source airport"] == selected_airport) | (routes["Destination airport"] == selected_airport)
                 ]
 
-                # Generate the map with airline routes
                 st.subheader(f"Routes for {selected_airport}")
-
-                airline_colors = selected_routes["Airline"].unique()  # Assuming there's a column for Airline
 
                 fig_airline = px.scatter_mapbox(
                     selected_routes,
@@ -212,16 +177,14 @@ def main():
                     mapbox_style="carto-darkmatter"
                 )
 
-                # Add return flight routes
                 for _, row in selected_routes.iterrows():
                     fig_airline.add_scattermapbox(
                         lon=[row["Source Longitude"], row["Destination Longitude"]],
                         lat=[row["Source Latitude"], row["Destination Latitude"]],
                         mode="lines",
-                        line=dict(width=2, color="blue"),
+                        line=dict(width=2, color="gold"),
                         name=f"{row['Airline']} route"
                     )
-
                 st.plotly_chart(fig_airline)
 
         else:
@@ -229,11 +192,9 @@ def main():
 
     except Exception as e:
         st.markdown(
-         f"<h3 style='color: red; text-align: center;'>🚨 An error occurred: {str(e)} 🚨</h3>", 
-        unsafe_allow_html=True
+            f"<h3 style='color: red; text-align: center;'>🚨 An error occurred: {e} 🚨</h3>", 
+            unsafe_allow_html=True
         )
 
-# Run the app
 if __name__ == "__main__":
     main()
-
