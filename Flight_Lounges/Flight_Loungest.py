@@ -192,7 +192,7 @@ def main():
 
     except Exception as e:
         st.markdown(
-            f"<h3 style='color: red; text-align: center;'>🚨 An error occurred: {e} 🚨</h3>", 
+            f"<h3 style='color: red; text-align: center;'>🚨 An error occurred. Please try selecting an airport or lounge 🚨</h3>", 
             unsafe_allow_html=True
         )
 
