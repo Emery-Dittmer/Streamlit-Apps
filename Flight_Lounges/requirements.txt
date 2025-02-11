@@ -1,8 +1,4 @@
 streamlit
 pandas
-numpy
-plotly
 plotly-express
-xlrd
-itertools
-requests
+permutations
