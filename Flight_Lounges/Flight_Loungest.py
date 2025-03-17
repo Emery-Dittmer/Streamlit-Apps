@@ -220,7 +220,7 @@ def main():
                         ).add_to(marker_cluster)
 
                         # Add route as a line
-                        #folium.PolyLine([source, destination], color="gold", weight=2.5, opacity=0.7).add_to(marker_cluster)
+                        folium.PolyLine([source, destination], color="gold", weight=2.5, opacity=0.7).add_to(marker_cluster)
 
                     # Display the map in Streamlit
                     
