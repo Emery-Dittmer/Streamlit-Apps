@@ -2,4 +2,7 @@ streamlit
 pandas
 plotly-express
 permutations
-matplotlib
+folium
+streamlit_folium
+folium.plugins.MarkerCluster
+
