@@ -4,5 +4,4 @@ plotly-express
 permutations
 folium
 streamlit_folium
-MarkerCluster
 
