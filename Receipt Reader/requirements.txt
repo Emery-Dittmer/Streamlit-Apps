@@ -1,0 +1,11 @@
+Streamlit
+PIL
+pytesseract
+io
+datetime
+json
+requests
+gspread
+oauth2client.service_account
+ast
+re
