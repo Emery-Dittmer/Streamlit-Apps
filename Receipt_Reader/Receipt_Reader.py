@@ -1,6 +1,6 @@
 import streamlit as st
 import shutil
-
+st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
 tesseract_path = shutil.which("tesseract")
 st.write("🔍 Tesseract installed at:", tesseract_path if tesseract_path else "❌ Not found")
 
