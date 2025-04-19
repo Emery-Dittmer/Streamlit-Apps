@@ -4,6 +4,5 @@ pytesseract
 datetime
 requests
 gspread
-oauth2client.service_account
 ast
 re
