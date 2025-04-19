@@ -163,7 +163,7 @@ def validate_submission_data(submission_data):
 # ------------------------------
 # Streamlit App
 # ------------------------------
-st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
+#st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
 st.title("📸 Receipt Parser and Logger")
 
 mode = "AI-assisted"
