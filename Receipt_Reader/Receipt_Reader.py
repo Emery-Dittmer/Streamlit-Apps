@@ -168,6 +168,8 @@ def validate_submission_data(submission_data):
 st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
 st.title("📸 Receipt Parser and Logger")
 
+which tesseract
+
 mode = "AI-assisted"
 parsed_text = ""
 data = {"items": {}, "total": 0.0}
