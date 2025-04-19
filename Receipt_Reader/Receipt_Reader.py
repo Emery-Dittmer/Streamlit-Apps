@@ -1,10 +1,5 @@
 import streamlit as st
 import shutil
-#st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
-#tesseract_path = shutil.which("tesseract")
-
-#st.write("🔍 Tesseract installed at:", tesseract_path if tesseract_path else "❌ Not found")
-
 from PIL import Image
 import pytesseract
 import datetime
@@ -17,6 +12,11 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import ast
 import re
+
+import os
+import subprocess
+
+
 
 # Set up Tesseract path (adjust this to your system)
 #pytesseract.pytesseract.tesseract_cmd = r'C:\Users\USER\AppData\Local\Tesseract-OCR\tesseract.exe'
@@ -168,7 +168,15 @@ def validate_submission_data(submission_data):
 st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
 st.title("📸 Receipt Parser and Logger")
 
-print(f"Tesseract installed at: {shutil.which('tesseract')}")
+#tesseract_path = shutil.which("tesseract")
+#st.write("🔍 Tesseract installed at:", tesseract_path if tesseract_path else "❌ Not found")
+
+# Try installing tesseract if it's not found
+try:
+    subprocess.run(['apt-get', 'install', '-y', 'tesseract-ocr'], check=True)
+    print("Tesseract installed successfully!")
+except subprocess.CalledProcessError as e:
+    print(f"Error installing Tesseract: {e}")
 
 mode = "AI-assisted"
 parsed_text = ""
