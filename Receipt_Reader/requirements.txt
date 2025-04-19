@@ -1,5 +1,5 @@
 Streamlit
-PIL
+Pillow
 pytesseract
 io
 datetime
