@@ -2,6 +2,7 @@ import streamlit as st
 import shutil
 st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
 tesseract_path = shutil.which("tesseract")
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'  # Default path on Linux-based systems
 st.write("🔍 Tesseract installed at:", tesseract_path if tesseract_path else "❌ Not found")
 
 from PIL import Image
