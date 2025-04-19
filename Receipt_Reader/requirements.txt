@@ -2,7 +2,6 @@ Streamlit
 Pillow
 pytesseract
 datetime
-json
 requests
 gspread
 oauth2client.service_account
