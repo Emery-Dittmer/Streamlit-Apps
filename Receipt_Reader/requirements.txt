@@ -1,7 +1,6 @@
 Streamlit
 Pillow
 pytesseract
-io
 datetime
 json
 requests
