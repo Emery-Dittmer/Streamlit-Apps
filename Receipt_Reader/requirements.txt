@@ -4,3 +4,4 @@ pytesseract
 datetime
 requests
 gspread
+oauth2client
