@@ -174,9 +174,9 @@ st.title("📸 Receipt Parser and Logger")
 # Try installing tesseract if it's not found
 try:
     subprocess.run(['apt-get', 'install', '-y', 'tesseract-ocr'], check=True)
-    print("Tesseract installed successfully!")
+    st.write("Tesseract installed successfully!")
 except subprocess.CalledProcessError as e:
-    print(f"Error installing Tesseract: {e}")
+    st.write(f"Error installing Tesseract: {e}")
 
 mode = "AI-assisted"
 parsed_text = ""
