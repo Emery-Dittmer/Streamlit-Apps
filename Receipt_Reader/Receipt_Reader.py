@@ -1,4 +1,9 @@
 import streamlit as st
+import shutil
+
+tesseract_path = shutil.which("tesseract")
+st.write("🔍 Tesseract installed at:", tesseract_path if tesseract_path else "❌ Not found")
+
 from PIL import Image
 import pytesseract
 import datetime
