@@ -16,9 +16,8 @@ import re
 pytesseract.pytesseract.tesseract_cmd = r'C:\Users\USER\AppData\Local\Tesseract-OCR\tesseract.exe'
 
 # === CONFIGURATION ===
-openai_api_key = "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"  # Optional: set your OpenAI API key
-OPENROUTER_API_KEY="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"
-together_api_key ="6704b4cca789dce2d5cd34624461524025d8f4773dc6a08872ae25e76783615b"
+together_api_key = st.secrets["TOGETHER_API_KEY"]
+
 cred_path = "credentials.json"
 cred_url = "https://drive.google.com/uc?id=1toCPjw-HfrsY4ZIci3ah44sNENtNmFWm&export=download"
 sheet_url = "https://docs.google.com/spreadsheets/d/1eqwvQTWila3Ax2RZt6Ld7qVg1DM5la60VmBvXedMRtk/edit#gid=1457412940"
