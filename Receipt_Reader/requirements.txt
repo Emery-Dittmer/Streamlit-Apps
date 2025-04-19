@@ -4,4 +4,3 @@ pytesseract
 datetime
 requests
 gspread
-ast
