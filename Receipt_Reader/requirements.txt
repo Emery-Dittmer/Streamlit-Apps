@@ -5,4 +5,3 @@ datetime
 requests
 gspread
 oauth2client
-tesseract-ocr
