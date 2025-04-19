@@ -1,9 +1,9 @@
 import streamlit as st
 import shutil
-st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
-tesseract_path = shutil.which("tesseract")
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'  # Default path on Linux-based systems
-st.write("🔍 Tesseract installed at:", tesseract_path if tesseract_path else "❌ Not found")
+#st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
+#tesseract_path = shutil.which("tesseract")
+
+#st.write("🔍 Tesseract installed at:", tesseract_path if tesseract_path else "❌ Not found")
 
 from PIL import Image
 import pytesseract
@@ -20,6 +20,7 @@ import re
 
 # Set up Tesseract path (adjust this to your system)
 #pytesseract.pytesseract.tesseract_cmd = r'C:\Users\USER\AppData\Local\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'  # Default path on Linux-based systems
 
 # === CONFIGURATION ===
 together_api_key = st.secrets["TOGETHER_API_KEY"]
@@ -164,7 +165,7 @@ def validate_submission_data(submission_data):
 # ------------------------------
 # Streamlit App
 # ------------------------------
-#st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
+st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
 st.title("📸 Receipt Parser and Logger")
 
 mode = "AI-assisted"
