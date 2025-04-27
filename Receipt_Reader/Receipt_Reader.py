@@ -199,7 +199,7 @@ if input_method != "Manual Entry":
                 st.image(image, caption="Receipt", use_container_width=True)
 
                 with st.spinner("Extracting text..."):
-                    parsed_text = pytesseract.image_to_string(image, lang='eng+fra')
+                    parsed_text = pytesseract.image_to_string(image) # , lang='eng+fra')
                     st.session_state["parsed_text"] = parsed_text
 
                     try:
