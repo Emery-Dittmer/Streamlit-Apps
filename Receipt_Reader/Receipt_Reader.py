@@ -20,7 +20,7 @@ import subprocess
 
 # Set up Tesseract path (adjust this to your system)
 #pytesseract.pytesseract.tesseract_cmd = r'C:\Users\USER\AppData\Local\Tesseract-OCR\tesseract.exe'
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'  # Default path on Linux-based systems
+#pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'  # Default path on Linux-based systems
 
 # === CONFIGURATION ===
 together_api_key = st.secrets["TOGETHER_API_KEY"]
