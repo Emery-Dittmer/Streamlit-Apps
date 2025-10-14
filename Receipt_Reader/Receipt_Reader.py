@@ -12,6 +12,7 @@ import os
 import subprocess
 
 # === NEW: OpenAI client ===
+import OpenAI
 from openai import OpenAI
 
 # === CONFIGURATION ===
