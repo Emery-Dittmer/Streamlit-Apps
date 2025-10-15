@@ -6,4 +6,3 @@ requests
 gspread
 oauth2client
 OpenAI
-tesseract-ocr
