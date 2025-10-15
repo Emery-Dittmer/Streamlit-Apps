@@ -1,7 +1,6 @@
 import streamlit as st
 import shutil
 from PIL import Image
-import pytesseract
 import datetime
 import json
 import requests
@@ -13,6 +12,25 @@ import subprocess
 
 # === NEW: OpenAI client ===
 from openai import OpenAI
+
+# === NEW: EasyOCR (replaces Tesseract) ===
+# Install at runtime if missing (best-effort)
+try:
+    import easyocr  # type: ignore
+except ImportError:
+    try:
+        subprocess.run(
+            ["pip", "install", "--quiet", "easyocr"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        import easyocr  # type: ignore
+    except Exception as _e:
+        st.error("❌ Could not install EasyOCR in this environment.")
+        easyocr = None
+
+import numpy as np
 
 # === CONFIGURATION ===
 # Replace Together with OpenAI
@@ -132,18 +150,46 @@ def validate_submission_data(submission_data, match_amount: int):
     return True
 
 # ------------------------------
+# EasyOCR helpers
+# ------------------------------
+@st.cache_resource(show_spinner=False)
+def get_easyocr_reader():
+    """
+    Cache the EasyOCR Reader so we don't re-load models each rerun.
+    """
+    if easyocr is None:
+        return None
+    try:
+        # Add other languages if you need them, e.g. ['en','fr','de']
+        return easyocr.Reader(['en'], gpu=False)
+    except Exception as e:
+        st.error(f"❌ EasyOCR initialization failed: {e}")
+        return None
+
+def ocr_image_with_easyocr(pil_img: Image.Image) -> str:
+    """
+    Run EasyOCR on a PIL image and return a single text blob.
+    """
+    reader = get_easyocr_reader()
+    if reader is None:
+        return ""
+    try:
+        np_img = np.array(pil_img.convert("RGB"))
+        results = reader.readtext(np_img, detail=1, paragraph=False)
+        # results is a list of (bbox, text, confidence)
+        lines = [r[1] for r in results if isinstance(r, (list, tuple)) and len(r) >= 2]
+        return "\n".join(lines).strip()
+    except Exception as e:
+        st.error(f"❌ EasyOCR error: {e}")
+        return ""
+
+# ------------------------------
 # Streamlit App
 # ------------------------------
 st.set_page_config(page_title="Receipt Parser", page_icon="📸", layout="centered")
 st.title("📸 Receipt Parser and Logger (OpenAI)")
 
-# Try installing tesseract at runtime (best-effort)
-try:
-    subprocess.run(['apt-get', 'update', '-y'], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run(['apt-get', 'install', '-y', 'tesseract-ocr'], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    # st.write("Tesseract installed successfully!")
-except subprocess.CalledProcessError as e:
-    st.write(f"Note: Tesseract install may have failed in this environment: {e}")
+# (Removed Tesseract apt-get install block)
 
 mode = "AI-assisted"
 parsed_text = ""
@@ -167,8 +213,8 @@ if input_method != "Manual Entry":
             # Only OCR + extract once per session to avoid re-billing
             fresh_parse = "parsed_text" not in st.session_state
             if fresh_parse:
-                with st.spinner("🔎 Extracting text with OCR..."):
-                    parsed_text = pytesseract.image_to_string(image)
+                with st.spinner("🔎 Extracting text with OCR (EasyOCR)..."):
+                    parsed_text = ocr_image_with_easyocr(image)
                     st.session_state["parsed_text"] = parsed_text
 
                 with st.spinner("🧠 Structuring with OpenAI..."):
@@ -229,10 +275,20 @@ with st.expander("🧾 Receipt Details", expanded=True):
         selected_year = st.selectbox("Effective Year", list(range(today.year - 5, today.year + 6)), index=5)
     effective_month = f"{selected_month} {selected_year}"
 
-    default_currency_key = next((k for k, v in currency_options.items() if v == extracted_currency), "CAD - Canadian Dollar")
+    currency_options_map = {
+        "EUR - Euro": "EUR",
+        "USD - US Dollar": "USD",
+        "GBP - British Pound": "GBP",
+        "CAD - Canadian Dollar": "CAD",
+        "CHF - Swiss Franc": "CHF",
+        "JPY - Japanese Yen": "JPY",
+        "AUD - Australian Dollar": "AUD",
+        "CNY - Chinese Yuan": "CNY"
+    }
+    default_currency_key = next((k for k, v in currency_options_map.items() if v == extracted_currency), "CAD - Canadian Dollar")
     selected_currency = st.pills(
         "Currency",
-        options=list(currency_options.keys()),
+        options=list(currency_options_map.keys()),
         help="Choose the currency of the purchase",
         selection_mode="single"
     ) or default_currency_key
@@ -301,54 +357,3 @@ if st.session_state["show_itemisation"]:
             new_name = c1.text_input(f"Item {i+1}", value=item_name, key=f"item_{i}")
             new_price = c2.number_input("", value=float(item_price), key=f"price_{i}", format="%.2f")
             delete = c3.button("🗑️", key=f"delete_{i}")
-
-            if not delete:
-                new_items.append((new_name, new_price))
-                itemised_total += new_price
-
-        # Update after deletes
-        st.session_state["items"] = new_items
-
-        # Total check
-        if abs(itemised_total - float(total)) > 1e-6:
-            st.error(f"❌ The itemisation total ({itemised_total:.2f}) does not match the provided total ({float(total):.2f}).")
-            match_amount = 0
-        else:
-            st.success(f"✅ The itemisation total matches the provided total: {itemised_total:.2f}")
-            match_amount = 1
-
-# === Submission ===
-st.markdown("---")
-if st.button("✅ Submit"):
-    what_text = ", ".join([f"{name} ({price:.2f})" for name, price in st.session_state.get("items", [])]) if st.session_state.get("show_itemisation", False) else ""
-    expense_data = {
-        "Expense date": str(purchase_date),
-        "Effective month": effective_month,
-        "who": selected_person,
-        "amount": str(total),
-        "what": what_text,
-        "category": category,
-        "Currency": selected_currency
-    }
-
-    submission_data = {
-        "person": selected_person,
-        "category": category,
-        "total": total,
-        "purchase_date": str(purchase_date),
-        "effective_date": str(effective_month),
-    }
-    if st.session_state.get("show_itemisation", False):
-        submission_data["items"] = dict(st.session_state["items"])
-
-    if validate_submission_data(submission_data, match_amount):
-        with st.spinner("📤 Uploading to Google Sheets..."):
-            if download_creds_file(cred_url, cred_path):
-                try:
-                    row_num = insert_expense_data(cred_path, sheet_url, sheet_gid, expense_data, column_order)
-                    st.success(f"✅ Uploaded to Google Sheets at row {row_num}.")
-                except Exception as e:
-                    st.error(f"❌ Error uploading to Google Sheets: {e}")
-        st.json(submission_data)
-    else:
-        st.warning("Please fill in all required fields and ensure itemisation matches")
