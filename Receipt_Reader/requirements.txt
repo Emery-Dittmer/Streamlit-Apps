@@ -1,6 +1,6 @@
 Streamlit
 Pillow
-pytesseract
+pytesseract==0.3.8
 datetime
 requests
 gspread
